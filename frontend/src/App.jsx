@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'framer-motion'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import Layout from './components/Layout/Layout'
@@ -7,6 +7,7 @@ import { PageLoader } from './components/Loader/Skeleton'
 import PageTransition from './components/Motion/PageTransition'
 import ProtectedRoute, { GuestOnlyRoute } from './components/Routing/ProtectedRoute'
 import ScrollToTop from './components/Routing/ScrollToTop'
+import { API_URL } from './services/api'
 
 // Code-split every page so the first load stays small.
 const Home = lazy(() => import('./pages/Home/Home'))
@@ -39,6 +40,20 @@ function Page({ children }) {
   return <PageTransition>{children}</PageTransition>
 }
 
+function AdminRedirect() {
+  const location = useLocation()
+  const adminURL = new URL(
+    `${location.pathname}${location.search}${location.hash}`,
+    new URL(API_URL, window.location.origin).origin,
+  )
+
+  useEffect(() => {
+    window.location.replace(adminURL.href)
+  }, [adminURL.href])
+
+  return <PageLoader />
+}
+
 export default function App() {
   const location = useLocation()
   // Animate between top-level sections; nested dashboard routes share one key.
@@ -50,6 +65,7 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
         <AnimatePresence mode="wait" initial={false}>
           <Routes location={location} key={key}>
+            <Route path="/admin/*" element={<AdminRedirect />} />
             <Route path="/" element={<Page><Home /></Page>} />
             <Route path="/shop" element={<Page><Shop /></Page>} />
             <Route path="/category/:categorySlug" element={<Page><Shop /></Page>} />
